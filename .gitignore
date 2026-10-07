@@ -1,0 +1,13 @@
+# 构建配置
+local.properties
+.gradle/
+build/
+*.iml
+.idea/
+.DS_Store
+
+# 签名密钥绝不要提交
+*.jks
+*.keystore
+!debug.keystore
+signing.properties

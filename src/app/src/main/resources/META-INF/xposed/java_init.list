@@ -1,0 +1,2 @@
+# Java entry class of this module, see io.github.libxposed.api package docs.
+com.moefactory.bettermiuiexpress.hook.HookEntry

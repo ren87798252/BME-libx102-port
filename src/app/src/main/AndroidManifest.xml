@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      io.github.libxposed:service:102.0.0 与 io.github.libxposed:interface:102.0.0
+      的 AndroidManifest 都声明了 minSdkVersion=26，manifest merger 默认会拒绝
+      合并到 minSdk 24 的工程。
+
+      已核实这两个库实际未使用任何 API 26 专有特性：
+        - service:   只有 java.util.Objects[API 19]、ConcurrentHashMap[API 1]、
+                     ParcelFileDescriptor[API 1] 等；
+        - interface: 4 个 AIDL 接口文件，无任何 import，更无 API 26 调用。
+      （均无 java.nio.file / java.time / java.util.stream / String.join /
+        List.of / Optional / removeIf / Comparator.comparing 等 API 26 API）
+
+      overrideLibrary 的取值是各库 manifest 里的 package 名，注意两者不同：
+        service   -> io.github.libxposed.service
+        interface -> io.github.libxposed.service.interfaces
+
+      运行环境本身是 LSPosed（支持 Android 9+），实际最低设备远高于 24，
+      这里 override 不会造成实际兼容性损失。
+    -->
+    <uses-sdk tools:overrideLibrary="io.github.libxposed.service,io.github.libxposed.service.interfaces" />
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="false"
+        android:theme="@style/Theme.BetterMiuiExpress"
+        android:name=".base.app.BetterMiuiExpress">
+        <activity
+            android:name=".activity.ExpressDetailsActivity"
+            android:exported="true"
+            android:taskAffinity="com.miui.personalassistant.express"
+            android:icon="@drawable/ic_pa">
+            <intent-filter>
+                <action android:name="com.moefactory.bettermiuiexpress.details" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".activity.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="de.robv.android.xposed.category.MODULE_SETTINGS" />
+            </intent-filter>
+        </activity>
+
+        <meta-data
+            android:name="xposedmodule"
+            android:value="true" />
+        <meta-data
+            android:name="xposeddescription"
+            android:value="Prevent Express entry in MIUI Personal Assistant calling Alibaba apps." />
+        <meta-data
+            android:name="xposedminversion"
+            android:value="102" />
+
+        <activity-alias
+            android:name="com.moefactory.bettermiuiexpress.activity.MainActivityAlias"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:targetActivity=".activity.MainActivity"
+            android:theme="@style/Theme.BetterMiuiExpress"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+    </application>
+
+</manifest>
