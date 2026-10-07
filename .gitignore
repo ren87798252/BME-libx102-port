@@ -9,5 +9,7 @@ build/
 # 签名密钥绝不要提交
 *.jks
 *.keystore
-!debug.keystore
 signing.properties
+
+# Release 产物目录（APK 由 CI/手动构建产出并单独上传）
+# out/ 里的 APK 是本仓库有意提供的下载，故不忽略

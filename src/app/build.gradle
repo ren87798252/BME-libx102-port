@@ -68,6 +68,13 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // 必须显式关联：AGP 只会为 debug 自动套用同名 signingConfig，
+            // release 若不写这行就用不上上面 signingConfigs 里的配置，
+            // 产物会是 app-release-unsigned.apk。
+            // 仅当上面成功配置了 release 签名时才赋值，否则保持无签名以免配置失败。
+            if (signingConfigs.findByName('release') != null) {
+                signingConfig signingConfigs.release
+            }
         }
     }
     compileOptions {

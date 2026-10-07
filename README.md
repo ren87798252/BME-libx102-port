@@ -20,18 +20,34 @@
 
 ## 产物信息
 
+### Release（推荐）
+
 ```
-out/BME-libx102-debug.apk       7,490,653 字节
+out/BME-libx102-1.7.4-release.apk     1,756,184 字节 (~1.67 MiB)
 
 package            com.moefactory.bettermiuiexpress
 versionName        1.7.4  (versionCode 31)
 minSdk / targetSdk 24 / 35
 compileSdk         37 (android-37.0)
-签名               v2 方案，Android Debug 证书（自建，非上游发布密钥）
+R8 混淆            已开启（minifyEnabled + shrinkResources）
+签名               v2 方案，RSA 2048，本项目自建密钥
+SHA-256            a0ba524590a4bf4f5215b1da7f835a362a177fc953e3ac01c49ee3fdc26c0155
+
+证书 SHA-256       1B:74:04:BE:87:8A:EF:D0:16:13:B6:F2:AD:93:24:A8:18:06:3B:40:9C:3B:F1:90:51:C8:98:22:22:63:42:7A
 ```
 
-**不要**把这个 APK 当作上游的正式发布版分发。它是调试构建，
-用随机生成的 debug keystore 签名。要正式使用请自行编译并用你自己的密钥签名。
+签名细节、自建构建流程、以及混淆后的完整性检查见
+[`docs/RELEASE.md`](docs/RELEASE.md)。
+
+### Debug
+
+```
+out/BME-libx102-debug.apk             7,490,653 字节 (~7.1 MiB)
+签名               v2 方案，Android Debug 证书
+```
+
+**两者都**不是上游的正式发布版，用的是本项目自建密钥。
+要正式使用请自行编译并用你自己的密钥签名。
 
 ## 移植做了什么
 
