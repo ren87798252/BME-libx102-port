@@ -78,9 +78,7 @@ Apache-2.0 要求保留版权声明与许可声明 —— 上游 AAR 的 `META-I
 | Android SDK Platform | android-37.0 | Apache-2.0 + [Android SDK ToS](https://developer.android.com/studio/terms) |
 | Android SDK Build-Tools | 37.0.0 | 同上 |
 | Android SDK Platform-Tools | 37.0.1 | 同上 |
-| [Termux](https://github.com/termux/termux-app) | 0.118.3 | GPL-3.0 |
-| [termux-packages](https://github.com/termux/termux-packages)（aapt2、openjdk-17 等） | — | 各包自身协议 |
-| OpenJDK 17（Termux `openjdk-17`） | 17.0.20 | GPL-2.0-with-classpath-exception |
+| OpenJDK | 17 | GPL-2.0-with-classpath-exception |
 
 构建工具不进入 APK 产物，此处列出仅为记录构建环境。
 

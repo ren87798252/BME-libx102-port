@@ -1,10 +1,9 @@
 # BetterMiuiExpress — libxposed API 102 移植
 
 把 [BetterMiuiExpress](https://github.com/Robotxm/BetterMiuiExpress) 从
-**YukiHookAPI / 传统 Xposed API** 移植到 **libxposed 现代 API（API 102）**，
-并附上在 **Android 手机（aarch64 + Termux）上完成构建**的可复现流程。
+**YukiHookAPI / 传统 Xposed API** 移植到 **libxposed 现代 API（API 102）**。
 
-> 这不是我的原创项目。上游代码版权归原作者所有，本仓库只做 API 移植与构建记录。
+> 这不是我的原创项目。上游代码版权归原作者所有，本仓库只做 API 移植。
 > 授权见 [LICENSE](LICENSE)（GPLv3，继承自上游）。
 
 ---
@@ -13,10 +12,9 @@
 
 | 目录 | 内容 |
 |---|---|
-| `src/` | 移植后的完整 Android 工程（可 `./gradlew :app:assembleDebug`） |
-| `docs/` | 移植与编译的完整记录，含踩坑分析和证据 |
-| `scripts/` | 在手机上构建用的脚本（Termux 环境封装、SDK 安装、编译） |
-| `out/` | 已验证的构建产物 `BME-libx102-debug.apk` |
+| `src/` | 移植后的完整 Android 工程 |
+| `docs/` | Release 构建与签名说明 |
+| `out/` | 已签名构建产物 |
 
 ## 产物信息
 
@@ -36,9 +34,6 @@ SHA-256            a0ba524590a4bf4f5215b1da7f835a362a177fc953e3ac01c49ee3fdc26c0
 证书 SHA-256       1B:74:04:BE:87:8A:EF:D0:16:13:B6:F2:AD:93:24:A8:18:06:3B:40:9C:3B:F1:90:51:C8:98:22:22:63:42:7A
 ```
 
-签名细节、自建构建流程、以及混淆后的完整性检查见
-[`docs/RELEASE.md`](docs/RELEASE.md)。
-
 ### Debug
 
 ```
@@ -48,6 +43,7 @@ out/BME-libx102-debug.apk             7,490,653 字节 (~7.1 MiB)
 
 **两者都**不是上游的正式发布版，用的是本项目自建密钥。
 要正式使用请自行编译并用你自己的密钥签名。
+签名细节与构建方式见 [`docs/RELEASE.md`](docs/RELEASE.md)。
 
 ## 移植做了什么
 
@@ -72,22 +68,22 @@ out/BME-libx102-debug.apk             7,490,653 字节 (~7.1 MiB)
   `intercept { chain -> ...; chain.proceed() }`
 - 入口从 `IYukiHookXposedInit` 改为 `XposedModule` 子类
 
-## 编译过程中修掉的问题
+## 移植中处理过的兼容性问题
 
-完整分析（含反编译字节码取证）在 [`docs/BUILD-RESULT.md`](docs/BUILD-RESULT.md)。
-四个问题：
+这些是让工程能编译通过所做的最小改动，都在源码注释里留了原因：
 
-1. **`Failed to find target with hash string 'android-37'`**
-   SDK 里 API 37 只有 `platforms;android-37.0`，没有裸 `android-37`。
-   AGP 的 hash 生成逻辑（`CompileSdkVersionImpl.toHash()`，javap 反编译确认）
-   是 `"android-" + apiLevel`，**只有 minorApiLevel 非 null 时才追加 `"." + minor`**，
-   所以必须显式设 `compileSdkMinor = 0`。
+1. **API 37 的平台包名带小版本**
+   仓库里只有 `platforms;android-37.0`，没有裸 `android-37`。
+   AGP 的 hash 是 `"android-" + apiLevel`，仅当 `minorApiLevel` 非 null 时
+   才追加 `"." + minor`，因此需显式写 `compileSdkMinor = 0`，
+   否则报 `Failed to find target with hash string 'android-37'`。
 
 2. **`io.github.libxposed:service` / `:interface` 声明 minSdk 26，工程是 24**
-   核实过源码：`service` 只用到 `java.util.Objects`(API 19) /
-   `ParcelFileDescriptor`(API 1)；`interface` 是 4 个 AIDL 文件、零 import。
-   → 用 `tools:overrideLibrary` 放行。注意**两个库包名不同**，
-   必须都写（只写前者会接着报后者）。
+   核实源码后确认二者未使用任何 API 26 专有特性
+   （`service` 只用到 `java.util.Objects`(API 19)、`ParcelFileDescriptor`(API 1)；
+   `interface` 是 4 个 AIDL 文件、零 import）。
+   故用 `tools:overrideLibrary` 放行，保留 minSdk 24。
+   注意**两个库的包名不同**，必须都写。
 
 3. **public inline 函数访问 private const**（`NetworkFlowResource.kt`）
    Kotlin 禁止 public inline 函数内联 private 成员 → 字面量直接内联。
@@ -96,43 +92,15 @@ out/BME-libx102-debug.apk             7,490,653 字节 (~7.1 MiB)
    原码用 KavaRef 的 `cast<>()` 返回非空包装，换成 `as?` 后 nullability 变了
    → `.map` 改 `.mapNotNull { it?.… }`。
 
-## 手机端构建（aarch64）
-
-核心难点是 **Google 不提供 arm64 的 aapt2**：
-
-```
-build-tools/37.0.0/aapt2 → ELF 64-bit x86-64        ← 手机上跑不了
-```
-
-解法是把 AGP 指到 Termux 的原生 aapt2：
-
-```bash
-./gradlew :app:assembleDebug \
-    -Pandroid.aapt2FromMavenOverride=$PREFIX/bin/aapt2
-```
-
-（实测 Termux 的 aapt2 2.20 能处理 compileSdk 37 的资源，无需 AndroidIDE 版本。）
-
-`scripts/` 里的三个脚本：
-
-| 脚本 | 用途 |
-|---|---|
-| `txrun.sh` | 注入 Termux 环境变量与代理，封装执行 |
-| `sdkinstall.sh` | 装 platform-tools + `platforms;android-37.0` + `build-tools;37.0.0` |
-| `run-build.sh` | 同步源码、写 `local.properties`、跑 `assembleDebug` |
-
-`run-build.sh` 里两个容易漏的点：
-- `gradlew` 的 shebang 是 `#!/usr/bin/env sh`，而 Android 没有 `/usr/bin/env`
-  → 必须 `bash ./gradlew ...`
-- Java 程序不认 `http_proxy` 环境变量，需要额外
-  `-Dhttps.proxyHost=... -Dhttps.proxyPort=...`
-
-复现步骤见 `docs/BUILD-RESULT.md` 第四节。
+5. **release 签名未生效**（`app/build.gradle`）
+   `signingConfigs` 定义了 `release`，但 `buildTypes.release` 没有引用它。
+   AGP 只对 `debug` 自动套用同名配置，release 必须显式
+   `signingConfig signingConfigs.release`，否则静默产出
+   `app-release-unsigned.apk`（无任何报错）。
 
 ## 使用
 
-1. 安装 `out/BME-libx102-debug.apk`
-   （或自行编译：`cd src && ./gradlew :app:assembleDebug`）
+1. 安装 `out/BME-libx102-1.7.4-release.apk`
 2. 在 LSPosed 里启用模块，作用域勾 **智能助理**（`com.miui.personalassistant`）
 3. **首次务必打开模块主界面完成初始化** —— 会生成 track id 写入
    remote preferences，被 hook 进程靠它读；跳过这步快递查询拿不到数据
@@ -142,6 +110,16 @@ build-tools/37.0.0/aapt2 → ELF 64-bit x86-64        ← 手机上跑不了
 **强依赖框架支持 libxposed 现代 API（101/102）。**
 官方 `LSPosed/LSPosed` 不支持（其 `LSPosedBridge` 仍是老接口），
 装上去模块不会被加载。已验证可用的是 **LSPosed IT v2.2.0-it**。
+
+## 构建
+
+```bash
+cd src
+bash ./gradlew :app:assembleRelease
+```
+
+需要 JDK 17、Android SDK platform 37.0、build-tools 37.0.0。
+release 签名配置见 [`docs/RELEASE.md`](docs/RELEASE.md)。
 
 ## 第三方组件与协议
 
@@ -174,8 +152,6 @@ build-tools/37.0.0/aapt2 → ELF 64-bit x86-64        ← 手机上跑不了
 | [Gradle](https://gradle.org/) 8.13 | Apache-2.0 |
 | [Kotlin](https://kotlinlang.org/) 2.2.20 | Apache-2.0 |
 | Android SDK platform 37.0 / build-tools 37.0.0 | Apache-2.0（SDK 另有 [ToS](https://developer.android.com/studio/terms)） |
-| [Termux](https://github.com/termux/termux-app) / termux-packages | GPL-3.0 / 各包自身协议 |
-| OpenJDK 17（Termux `openjdk-17`） | GPL-2.0-with-classpath-exception |
 
 ### 运行时依赖
 
@@ -183,7 +159,8 @@ build-tools/37.0.0/aapt2 → ELF 64-bit x86-64        ← 手机上跑不了
 
 ## 已知限制
 
-- 调试签名，不可用于正式分发
+- 使用本项目自建密钥签名，与上游发布密钥不同，无法互相覆盖安装；
+  从上游版本升级需先卸载
 - 只验证了构建成功与 APK 结构正确；**未在真机端到端跑通**（需要你装上去测）
 - 顺丰若使用隐私手机号，查不到详情（上游既有问题，非本次移植引入）
 - 仅适用于支持 libxposed 现代 API 的框架
@@ -192,4 +169,3 @@ build-tools/37.0.0/aapt2 → ELF 64-bit x86-64        ← 手机上跑不了
 
 - 上游：https://github.com/Robotxm/BetterMiuiExpress
 - libxposed：https://github.com/libxposed
-- 完整移植/编译记录：[`docs/BUILD-RESULT.md`](docs/BUILD-RESULT.md)

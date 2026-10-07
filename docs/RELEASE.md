@@ -1,4 +1,4 @@
-# Release 构建说明
+# Release 构建与签名
 
 ## 产物
 
@@ -7,8 +7,8 @@ BME-libx102-1.7.4-release.apk      1,756,184 字节 (~1.67 MiB)
 SHA-256  a0ba524590a4bf4f5215b1da7f835a362a177fc953e3ac01c49ee3fdc26c0155
 ```
 
-（对比：同一份代码的 debug 构建为 7,490,653 字节。
-release 经 R8 混淆 + 资源压缩，体积缩减约 77%。）
+对比：同一份代码的 debug 构建为 7,490,653 字节。
+release 经 R8 混淆 + 资源压缩，体积缩减约 77%。
 
 ## 签名信息
 
@@ -36,7 +36,7 @@ apksigner verify --print-certs -v BME-libx102-1.7.4-release.apk
 keytool -printcert -jarfile BME-libx102-1.7.4-release.apk
 ```
 
-## 如何自己构建 release
+## 自己构建
 
 ### 1. 生成密钥库（只需一次）
 
@@ -47,13 +47,10 @@ keytool -genkeypair \
   -dname "CN=Your Name, O=Your Org, C=CN"
 ```
 
-`keytool` 来自 Termux 的 `openjdk-17`。
-
 ### 2. 写 `local.properties`
 
 ```properties
-sdk.dir=/data/data/com.termux/files/home/android-sdk
-signing.storeFile=/data/data/com.termux/files/home/bme-release.jks
+signing.storeFile=/绝对/路径/bme-release.jks
 signing.storePassword=你的库口令
 signing.keyPassword=你的密钥口令
 signing.keyAlias=bme
@@ -63,7 +60,7 @@ signing.keyAlias=bme
 
 - **`signing.storeFile` 请用绝对路径。** `app/build.gradle` 里的
   `file(storeFilePath)` 是相对**模块目录**（`app/`）解析的，
-  写相对路径很容易指错位置。
+  写相对路径很容易指错位置，且不会报错。
 - `local.properties` **不要提交**（已在 `.gitignore` 中）。
 - 若 `signing.storeFile` 指向的文件不存在，构建不会失败，
   只会产出 `app-release-unsigned.apk`。
@@ -72,13 +69,12 @@ signing.keyAlias=bme
 
 ```bash
 cd src
-bash ./gradlew :app:assembleRelease \
-  -Pandroid.aapt2FromMavenOverride=$PREFIX/bin/aapt2
+bash ./gradlew :app:assembleRelease
 ```
 
 产物在 `app/build/outputs/apk/release/app-release.apk`。
 
-## 上游 `app/build.gradle` 的一个坑（已修）
+## 上游 `app/build.gradle` 的一个坑（本仓库已修）
 
 原工程的 `signingConfigs` 块**定义了** `release` 配置，但 `buildTypes.release`
 里**没有引用它**。AGP 只会为 `debug` 自动套用同名 signingConfig，
@@ -97,7 +93,8 @@ buildTypes {
 
 不写这行的表现是：配置齐全、构建成功、但产物叫
 `app-release-unsigned.apk`（未签名），而且**没有任何报错或警告**，
-比较隐蔽。
+比较隐蔽。用 `findByName` 做保护是为了在没配置密钥时仍能构建
+（此时保持无签名，而不是让配置阶段失败）。
 
 ## 混淆后的完整性检查
 
@@ -121,13 +118,4 @@ classes.dex 中：
   （XposedProvider 经 manifest 合并，authorities =
   `com.moefactory.bettermiuiexpress.XposedService`）
 
-这些靠 `proguard-rules.pro` 里的规则保证，见
-[`THIRD-PARTY-NOTICES.md`](../THIRD-PARTY-NOTICES.md) 与工程内注释。
-
-## 手机端构建的一个前置条件
-
-若在 Termux 里直接执行 `git`/`gradlew` 遇到
-`'remote-https' is not a git command` 之类的问题，那是
-**SELinux 域限制**：Termux 应用域（`untrusted_app_27`）无法执行
-`$PREFIX/libexec/git-core/` 下的 git helper，而 `$PREFIX/bin/` 下的可以。
-这会影响 `git push`，但不影响 Gradle 构建本身。
+这些靠 `src/app/proguard-rules.pro` 里的规则保证。
