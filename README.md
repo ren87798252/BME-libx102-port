@@ -21,15 +21,15 @@
 ### Release（推荐）
 
 ```
-out/BME-libx102-1.7.4-release.apk     1,756,184 字节 (~1.67 MiB)
+out/BME-libx102-1.7.5-release.apk     1,757,348 字节 (~1.68 MiB)
 
 package            com.moefactory.bettermiuiexpress
-versionName        1.7.4  (versionCode 31)
+versionName        1.7.5  (versionCode 32)
 minSdk / targetSdk 24 / 35
 compileSdk         37 (android-37.0)
 R8 混淆            已开启（minifyEnabled + shrinkResources）
 签名               v2 方案，RSA 2048，本项目自建密钥
-SHA-256            a0ba524590a4bf4f5215b1da7f835a362a177fc953e3ac01c49ee3fdc26c0155
+SHA-256            c14e4d926c9d2f32d9e6caccc5f775ca6cd5ea6b4f68ae2b80a62d2da9cf9abe
 
 证书 SHA-256       1B:74:04:BE:87:8A:EF:D0:16:13:B6:F2:AD:93:24:A8:18:06:3B:40:9C:3B:F1:90:51:C8:98:22:22:63:42:7A
 ```
@@ -100,7 +100,7 @@ out/BME-libx102-debug.apk             7,490,653 字节 (~7.1 MiB)
 
 ## 使用
 
-1. 安装 `out/BME-libx102-1.7.4-release.apk`
+1. 安装 `out/BME-libx102-1.7.5-release.apk`
 2. 在 LSPosed 里启用模块，作用域勾 **智能助理**（`com.miui.personalassistant`）
 3. **首次务必打开模块主界面完成初始化** —— 会生成 track id 写入
    remote preferences，被 hook 进程靠它读；跳过这步快递查询拿不到数据

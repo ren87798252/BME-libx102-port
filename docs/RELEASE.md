@@ -3,8 +3,8 @@
 ## 产物
 
 ```
-BME-libx102-1.7.4-release.apk      1,756,184 字节 (~1.67 MiB)
-SHA-256  a0ba524590a4bf4f5215b1da7f835a362a177fc953e3ac01c49ee3fdc26c0155
+BME-libx102-1.7.5-release.apk      1,757,348 字节 (~1.68 MiB)
+SHA-256  c14e4d926c9d2f32d9e6caccc5f775ca6cd5ea6b4f68ae2b80a62d2da9cf9abe
 ```
 
 对比：同一份代码的 debug 构建为 7,490,653 字节。
@@ -31,9 +31,9 @@ DN          CN=BetterMiuiExpress libx102 port, OU=dev, O=personal, L=NA, ST=NA, 
 ### 验证产物
 
 ```bash
-apksigner verify --print-certs -v BME-libx102-1.7.4-release.apk
+apksigner verify --print-certs -v BME-libx102-1.7.5-release.apk
 # 或
-keytool -printcert -jarfile BME-libx102-1.7.4-release.apk
+keytool -printcert -jarfile BME-libx102-1.7.5-release.apk
 ```
 
 ## 自己构建

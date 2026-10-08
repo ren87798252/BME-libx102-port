@@ -24,8 +24,8 @@ android {
         applicationId "com.moefactory.bettermiuiexpress"
         minSdk 24
         targetSdk 35
-        versionCode 31
-        versionName "1.7.4"
+        versionCode 32
+        versionName "1.7.5"
         resConfigs 'zh'
         generatedDensities = []
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

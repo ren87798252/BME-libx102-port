@@ -17,6 +17,7 @@ import com.moefactory.bettermiuiexpress.repository.ExpressActualRepository
 import com.moefactory.bettermiuiexpress.utils.ExpressCompanyUtils
 import io.github.libxposed.api.XposedInterface
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -52,27 +53,32 @@ class PAExpressRepositoryHook(private val module: HookEntry) {
         ).intercept { chain ->
             runCatching {
                 runBlocking {
-                    val expressInfoList = (chain.getArg(0) as? List<*>)
-                        // 元素类型是 Any?（List<*> 的星投影），而 toExpressInfoWrapper()
-                        // 定义在非空 Any 上，所以这里必须先滤掉 null 再包装。
-                        ?.mapNotNull { it?.toExpressInfoWrapper() }
-                        ?.filter { !it.isXiaomiOrJingDong } // Skip packages from Xiaomi and JingDong
-                        ?: return@runBlocking
-                    for (expressInfoWrapper in expressInfoList) {
-                        val companyCode = expressInfoWrapper.companyCode
-                        val mailNumber = expressInfoWrapper.orderNumber
-                        val phoneNumber = expressInfoWrapper.phone ?: expressInfoWrapper.sendPhone
+                    // 这里的网络请求运行在被 hook 的调用线程上（runBlocking 阻塞
+                    // 它直到完成）。加上限防止智能助理侧长时间等待：单号最多
+                    // 15 秒，超时后放弃本次补全，原方法照常执行。
+                    withTimeout(15_000L) {
+                        val expressInfoList = (chain.getArg(0) as? List<*>)
+                            // 元素类型是 Any?（List<*> 的星投影），而 toExpressInfoWrapper()
+                            // 定义在非空 Any 上，所以这里必须先滤掉 null 再包装。
+                            ?.mapNotNull { it?.toExpressInfoWrapper() }
+                            ?.filter { !it.isXiaomiOrJingDong } // Skip packages from Xiaomi and JingDong
+                            ?: return@withTimeout
+                        for (expressInfoWrapper in expressInfoList) {
+                            val companyCode = expressInfoWrapper.companyCode
+                            val mailNumber = expressInfoWrapper.orderNumber
+                            val phoneNumber = expressInfoWrapper.phone ?: expressInfoWrapper.sendPhone
 
-                        val detailList = fetchExpressDetails(
-                            mailNumber, companyCode, phoneNumber, prefs
-                        )
+                            val detailList = fetchExpressDetails(
+                                mailNumber, companyCode, phoneNumber, prefs
+                            )
 
-                        // Ignore invalid result
-                        if (detailList.isNullOrEmpty()) continue
+                            // Ignore invalid result
+                            if (detailList.isNullOrEmpty()) continue
 
-                        // Save latest trace
-                        if (detailClass != null) {
-                            saveLatestExpressTrace(expressInfoWrapper, detailClass, detailList)
+                            // Save latest trace
+                            if (detailClass != null) {
+                                saveLatestExpressTrace(expressInfoWrapper, detailClass, detailList)
+                            }
                         }
                     }
                 }

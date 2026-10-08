@@ -156,13 +156,6 @@ class ExpressDetailsActivity : BaseActivity<ActivityExpressDetailsBinding>(false
     }
 
     private fun initObserver() {
-        viewModel.kuaiDi100CompanyInfo.observe(this) {
-            queryExpressDetails(
-                miuiExpress!!.mailNumber,
-                it.companyCode,
-                miuiExpress!!.phoneNumber,
-            )
-        }
         viewModel.expressDetails.observe(this) {
             if (it.isSuccess) {
                 val response = it.getOrNull()
